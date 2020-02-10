@@ -17,6 +17,7 @@ namespace UnitystationProm
         static async Task Main()
         {
             var server = new MetricServer(hostname: "*", port: 7776);
+            Metrics.SuppressDefaultMetrics();
             var http = new HttpClient();
             server.Start();
 
@@ -26,6 +27,11 @@ namespace UnitystationProm
                 var res = await http.GetStringAsync("https://api.unitystation.org/serverlist");
                 var par = JsonSerializer.Deserialize<RootObject>(res);
                 var names = par.servers.Select(s => s.ServerName);
+                var oldNames = Players.GetAllLabelValues().Select(v => v.FirstOrDefault());
+
+                foreach(var old in oldNames.Except(names)){
+                    Players.RemoveLabelled(old);
+                }
 
                 foreach(var server in par.servers){
                     Players.WithLabels(server.ServerName).Set(server.PlayerCount);

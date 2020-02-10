@@ -1,0 +1,15 @@
+version: "3.4"
+
+services:
+  unitystation:
+    build: UnitystationProm
+
+  prometheus:
+    ports:
+      - 9090:9090
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+
+  grafana:
+    volumes:
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
