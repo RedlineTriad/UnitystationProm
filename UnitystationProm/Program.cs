@@ -13,6 +13,18 @@ namespace UnitystationProm
             Metrics.CreateGauge("unitystation_players", "Amount of players on server", new GaugeConfiguration{
                 LabelNames = new [] {"server"}
             });
+        private static readonly Gauge Fps =
+            Metrics.CreateGauge("unitystation_fps", "Frames per second", new GaugeConfiguration{
+                LabelNames = new [] {"server"}
+            });
+        private static readonly Gauge BuildVersion =
+            Metrics.CreateGauge("unitystation_version", "Version of build", new GaugeConfiguration{
+                LabelNames = new [] {"server"}
+            });
+        private static readonly Gauge InGameTime =
+            Metrics.CreateGauge("unitystation_time", "In-game time", new GaugeConfiguration{
+                LabelNames = new [] {"server"}
+            });
 
         static async Task Main()
         {
@@ -35,6 +47,9 @@ namespace UnitystationProm
 
                 foreach(var server in par.servers){
                     Players.WithLabels(server.ServerName).Set(server.PlayerCount);
+                    Fps.WithLabels(server.ServerName).Set(server.Fps);
+                    BuildVersion.WithLabels(server.ServerName).Set(server.BuildVersion);
+                    InGameTime.WithLabels(server.ServerName).Set(DateTime.Parse(server.IngameTime).TimeOfDay.TotalMinutes);
                 }
             });
 

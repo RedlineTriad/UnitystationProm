@@ -15,5 +15,6 @@ namespace UnitystationProm
         public string WinDownload { get; set; }
         public string OSXDownload { get; set; }
         public string LinuxDownload { get; set; }
+        public int Fps { get; set; }
     }
 }
