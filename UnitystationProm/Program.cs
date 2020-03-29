@@ -47,7 +47,7 @@ namespace UnitystationProm
 
                 foreach(var server in par.servers){
                     Players.WithLabels(server.ServerName).Set(server.PlayerCount);
-                    Fps.WithLabels(server.ServerName).Set(server.Fps);
+                    Fps.WithLabels(server.ServerName).Set(server.fps);
                     BuildVersion.WithLabels(server.ServerName).Set(server.BuildVersion);
                     InGameTime.WithLabels(server.ServerName).Set(DateTime.Parse(server.IngameTime).TimeOfDay.TotalMinutes);
                 }
