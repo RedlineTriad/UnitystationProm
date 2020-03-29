@@ -10,20 +10,24 @@ namespace UnitystationProm
     class Program
     {
         private static readonly Gauge Players =
-            Metrics.CreateGauge("unitystation_players", "Amount of players on server", new GaugeConfiguration{
-                LabelNames = new [] {"server"}
+            Metrics.CreateGauge("unitystation_players", "Amount of players on server", new GaugeConfiguration
+            {
+                LabelNames = new[] { "server" }
             });
         private static readonly Gauge Fps =
-            Metrics.CreateGauge("unitystation_fps", "Frames per second", new GaugeConfiguration{
-                LabelNames = new [] {"server"}
+            Metrics.CreateGauge("unitystation_fps", "Frames per second", new GaugeConfiguration
+            {
+                LabelNames = new[] { "server" }
             });
         private static readonly Gauge BuildVersion =
-            Metrics.CreateGauge("unitystation_version", "Version of build", new GaugeConfiguration{
-                LabelNames = new [] {"server"}
+            Metrics.CreateGauge("unitystation_version", "Version of build", new GaugeConfiguration
+            {
+                LabelNames = new[] { "server" }
             });
         private static readonly Gauge InGameTime =
-            Metrics.CreateGauge("unitystation_time", "In-game time", new GaugeConfiguration{
-                LabelNames = new [] {"server"}
+            Metrics.CreateGauge("unitystation_time", "In-game time", new GaugeConfiguration
+            {
+                LabelNames = new[] { "server" }
             });
 
         static async Task Main()
@@ -35,21 +39,41 @@ namespace UnitystationProm
 
             Metrics.DefaultRegistry.AddBeforeCollectCallback(async (cancel) =>
             {
-                Console.WriteLine("Scraped");
-                var res = await http.GetStringAsync("https://api.unitystation.org/serverlist");
-                var par = JsonSerializer.Deserialize<RootObject>(res);
-                var names = par.servers.Select(s => s.ServerName);
-                var oldNames = Players.GetAllLabelValues().Select(v => v.FirstOrDefault());
+                try
+                {
+                    Console.WriteLine("Scraped");
+                    var res = await http.GetStringAsync("https://api.unitystation.org/serverlist");
+                    var par = JsonSerializer.Deserialize<RootObject>(res);
+                    var names = par.servers.Select(s => s.ServerName);
+                    var oldNames = new Gauge[] {
+                    Players,
+                    Fps,
+                    BuildVersion,
+                    InGameTime
+                    }
+                        .SelectMany(name => name
+                            .GetAllLabelValues()
+                            .Select(v => v.FirstOrDefault()));
 
-                foreach(var old in oldNames.Except(names)){
-                    Players.RemoveLabelled(old);
+                    foreach (var old in oldNames.Except(names))
+                    {
+                        Players.RemoveLabelled(old);
+                        Fps.RemoveLabelled(old);
+                        BuildVersion.RemoveLabelled(old);
+                        InGameTime.RemoveLabelled(old);
+                    }
+
+                    foreach (var server in par.servers)
+                    {
+                        Players.WithLabels(server.ServerName).Set(server.PlayerCount);
+                        Fps.WithLabels(server.ServerName).Set(server.fps);
+                        BuildVersion.WithLabels(server.ServerName).Set(server.BuildVersion);
+                        InGameTime.WithLabels(server.ServerName).Set(DateTime.TryParse(server.IngameTime, out var time) ? time.TimeOfDay.TotalMinutes : 0);
+                    }
                 }
-
-                foreach(var server in par.servers){
-                    Players.WithLabels(server.ServerName).Set(server.PlayerCount);
-                    Fps.WithLabels(server.ServerName).Set(server.fps);
-                    BuildVersion.WithLabels(server.ServerName).Set(server.BuildVersion);
-                    InGameTime.WithLabels(server.ServerName).Set(DateTime.Parse(server.IngameTime).TimeOfDay.TotalMinutes);
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
                 }
             });
 
